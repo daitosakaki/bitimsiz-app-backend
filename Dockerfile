@@ -1,4 +1,4 @@
-FROM node:18-slim
+FROM node:22-slim
 WORKDIR /usr/src/app
 COPY --from=builder /usr/src/app/node_modules ./node_modules
 COPY package*.json ./
