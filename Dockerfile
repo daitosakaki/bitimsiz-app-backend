@@ -1,6 +1,5 @@
 # ----------------------------------------------------------------
-# 1. AŞAMA: İNŞAATÇI (BUILDER) - Bağımlılıklar burada kurulur
-# BU SATIR ÇOK ÖNEMLİ: Aşamayı "builder" olarak isimlendiriyoruz
+# 1. AŞAMA: İNŞAATÇI (BUILDER) - Bağımlılıklar kurulur ve kod derlenir
 # ----------------------------------------------------------------
 FROM node:22-slim AS builder
 
@@ -9,34 +8,36 @@ WORKDIR /usr/src/app
 # Sadece package.json dosyalarını kopyala
 COPY package*.json ./
 
-# Bağımlılıkları kur (production bağımlılıkları yeterliyse --omit=dev kullan)
+# Hem production hem de development bağımlılıklarını kur (typescript'i kurmak için)
 RUN npm install
 
 # Kaynak kodun geri kalanını kopyala
 COPY . .
 
-# Eğer projenizde bir build adımı varsa (TypeScript, React vs. için)
-# RUN npm run build
+# TypeScript kodunu JavaScript'e derle
+# Bu komut package.json dosyanızdaki "build" script'ini çalıştırır
+# Genellikle "tsc" komutunu çalıştırarak /dist klasörü oluşturur.
+RUN npm run build
+
+# Sadece production bağımlılıklarını yeniden kurarak imaj boyutunu küçült
+RUN npm prune --production
 
 # ----------------------------------------------------------------
-# 2. AŞAMA: NİHAİ (FINAL) - Sadece gerekli dosyalar buraya gelir
+# 2. AŞAMA: NİHAİ (FINAL) - Sadece çalışan uygulama buraya gelir
 # ----------------------------------------------------------------
 FROM node:22-slim
 
 WORKDIR /usr/src/app
 
-# ÖNCEKİ "builder" AŞAMASINDAN SADECE GEREKLİ DOSYALARI KOPYALA
+# "builder" aşamasından SADECE GEREKLİ dosyaları kopyala
+# 1. Production node_modules klasörünü kopyala
 COPY --from=builder /usr/src/app/node_modules ./node_modules
-COPY --from=builder /usr/src/app/package*.json ./
-
-# Eğer bir build adımınız varsa, build çıktısını kopyalayın
-# COPY --from=builder /usr/src/app/dist ./dist
-# Eğer build adımınız yoksa, kaynak kodun tamamını kopyalayın
-COPY --from=builder /usr/src/app/src ./src
-COPY --from=builder /usr/src/app/server.js ./server.js
+# 2. Derlenmiş JavaScript kodunun bulunduğu "dist" klasörünü kopyala
+COPY --from=builder /usr/src/app/dist ./dist
 
 # Uygulamanın çalışacağı port
 ENV PORT 8080
 
-# Uygulamayı başlat
-CMD [ "node", "server.js" ]
+# Uygulamayı, derlenmiş JavaScript dosyasıyla başlat
+# Ana dosyanız dist/index.js ise bu satır doğrudur. Farklıysa güncelleyin.
+CMD [ "node", "dist/index.js" ]
