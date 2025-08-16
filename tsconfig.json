@@ -1,19 +1,19 @@
 {
   "compilerOptions": {
     /* Temel Ayarlar */
-    "target": "ES2020",                       // Modern JavaScript sürümünü hedefle
-    "module": "CommonJS",                    // Node.js için standart modül sistemi
-    "outDir": "./dist",                      // Derlenmiş JS dosyalarının konulacağı klasör
-    "rootDir": "./src",                      // Kaynak TS dosyalarının bulunduğu klasör
+    "target": "ES2020",
+    "module": "CommonJS",
+    "outDir": "./dist",
+    "rootDir": "./",                         // DEĞİŞİKLİK: Ana dizini kaynak olarak kabul et
 
     /* Katı Tip Kontrolü Ayarları */
-    "strict": true,                          // Tüm katı tip kontrol kurallarını etkinleştir
-    "esModuleInterop": true,                 // CommonJS ve ES modülleri arasında uyumluluğu sağla
+    "strict": true,
+    "esModuleInterop": true,
 
     /* Gelişmiş Ayarlar */
-    "skipLibCheck": true,                    // Bağımlılıkların tip dosyalarını kontrol etmeyi atla
-    "forceConsistentCasingInFileNames": true // Dosya adı büyük/küçük harf tutarlılığını zorunlu kıl
+    "skipLibCheck": true,
+    "forceConsistentCasingInFileNames": true
   },
-  "include": ["src/**/*"],                   // Derlemeye sadece 'src' klasöründeki dosyaları dahil et
-  "exclude": ["node_modules"]                // Bu klasörü derleme dışında bırak
+  "include": ["**/*.ts"],                     // DEĞİŞİKLİK: Ana dizin ve altındaki tüm .ts dosyalarını dahil et
+  "exclude": ["node_modules"]
 }
