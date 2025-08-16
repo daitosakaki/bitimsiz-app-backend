@@ -4,6 +4,7 @@ const admin = require('firebase-admin');
 const User = require('../users/user.model');
 const ApiError = require('../../utils/ApiError');
 const logger = require('../../config/logger');
+const config = require('../../config');
 
 /**
  * Verilen bir payload için JWT oluşturur.
@@ -33,7 +34,7 @@ const verifyPhoneAndGetRegToken = async (idToken) => {
     // Sadece bu amaç için kullanılacak 10 dakikalık geçici bir token oluştur
     const registrationToken = generateToken(
         { phoneNumber: phone_number, firebaseUid: uid, purpose: 'registration' },
-        process.env.JWT_SECRET,
+        config.jwt.secret,
         '10m'
     );
     return { registrationToken };
@@ -48,7 +49,7 @@ const verifyPhoneAndGetRegToken = async (idToken) => {
 const registerUser = async (registrationToken, userData) => {
     let payload;
     try {
-        payload = jwt.verify(registrationToken, process.env.JWT_SECRET);
+        payload = jwt.verify(registrationToken, config.jwt.secret);
         if (payload.purpose !== 'registration') throw new Error('Invalid token purpose');
     } catch (error) {
         throw new ApiError(httpStatus.UNAUTHORIZED, 'Invalid or expired registration token.');
@@ -67,8 +68,8 @@ const registerUser = async (registrationToken, userData) => {
         lastName,
     });
 
-    const accessToken = generateToken({ sub: user.id }, process.env.JWT_SECRET, process.env.JWT_EXPIRES_IN);
-    const refreshToken = generateToken({ sub: user.id }, process.env.JWT_REFRESH_SECRET, process.env.JWT_REFRESH_EXPIRES_IN);
+    const accessToken = generateToken({ sub: user.id }, config.jwt.secret, config.jwt.expiresIn);
+    const refreshToken = generateToken({ sub: user.id }, config.jwt.refreshSecret,config.jwt.refreshExpiresIn);
 
     return { user, tokens: { accessToken, refreshToken } };
 };
@@ -85,8 +86,8 @@ const loginWithPhoneAndPassword = async (phoneNumber, password) => {
         throw new ApiError(httpStatus.UNAUTHORIZED, 'Incorrect phone number or password.');
     }
 
-    const accessToken = generateToken({ sub: user.id }, process.env.JWT_SECRET, process.env.JWT_EXPIRES_IN);
-    const refreshToken = generateToken({ sub: user.id }, process.env.JWT_REFRESH_SECRET, process.env.JWT_REFRESH_EXPIRES_IN);
+    const accessToken = generateToken({ sub: user.id }, config.jwt.secret, config.jwt.expiresIn);
+    const refreshToken = generateToken({ sub: user.id }, config.jwt.refreshSecret,config.jwt.refreshExpiresIn);
 
     return { user, tokens: { accessToken, refreshToken } };
 };

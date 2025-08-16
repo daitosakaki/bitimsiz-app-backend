@@ -17,9 +17,6 @@ if (config.env !== 'test') {
   app.use(morganMiddleware);
 }
 
-app.listen(port, () => {
-  console.log(`Sunucu ${port} portunda çalışıyor...`);
-});
 app.use(helmet());
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
@@ -39,4 +36,7 @@ app.use((req, res, next) => {
 app.use(errorConverter);
 app.use(errorHandler);
 
+app.listen(port, () => {
+  console.log(`Sunucu ${port} portunda çalışıyor...`);
+});
 module.exports = app;
