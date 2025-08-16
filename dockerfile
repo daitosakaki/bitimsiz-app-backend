@@ -4,8 +4,6 @@
 FROM node:18-slim AS builder
 WORKDIR /usr/src/app
 COPY package*.json ./
-# Sadece production bağımlılıklarını kurmak nihai imaj için daha iyidir.
-# Eğer build adımlarınız (örn: TypeScript) varsa tümünü kurabilirsiniz.
 RUN npm install --only=production
 COPY . .
 

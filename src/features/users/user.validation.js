@@ -1,7 +1,15 @@
 const Joi = require('joi');
 const { objectId } = require('../../middlewares/validate.middleware'); // ID formatı için özel bir validator
 
-// updateUserSchema aynı kalır...
+const updateUserSchema = {
+    body: Joi.object().keys({
+        firstName: Joi.string().trim().max(50),
+        lastName: Joi.string().trim().max(50),
+        displayName: Joi.string().trim().min(2).max(50),
+        bio: Joi.string().trim().max(160).allow(''),
+        isPrivate: Joi.boolean(),
+    }).min(1),
+};
 
 const addressSchema = {
     body: Joi.object().keys({
@@ -27,7 +35,6 @@ const addressIdSchema = {
 
 module.exports = {
     userValidation: {
-        // ...
         updateUserSchema,
     },
     addressValidation: {

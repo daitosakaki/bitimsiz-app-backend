@@ -1,9 +1,9 @@
-const { validate } = require('../../middlewares/validate.middleware');
-const { userValidation } = require('../../features/users/user.validation');
 const express = require('express');
-const auth = require('../../middlewares/auth.middleware'); // Passport versiyonunu import ettiğimizi varsayalım
+const auth = require('../../middlewares/auth.middleware');
+const { validate } = require('../../middlewares/validate.middleware'); // <-- EKLENDİ
 const userController = require('../../features/users/user.controller');
-const { addressValidation } = require('../../features/users/user.validation');
+const { userValidation, addressValidation } = require('../../features/users/user.validation'); // <-- EKLENDİ
+
 const router = express.Router();
 
 // Bu rota artık korunuyor. Sadece geçerli bir token'a sahip kullanıcılar erişebilir.

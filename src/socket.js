@@ -94,12 +94,75 @@ function initializeSocket(httpServer) {
           }
         });
 
+        // --- DOLDURULMUŞ KISIM: MESAJ SİLME ---
         socket.on('deleteMessage', async (data) => {
-          // ... (Daha önceki cevaptaki soft delete mantığı)
+            try {
+                const { messageId, chatId } = data;
+                const message = await Message.findById(messageId);
+
+                if (!message || message.sender.toString() !== socket.userId) {
+                    logger.warn('Unauthorized attempt to delete message', { 
+                        messageId, 
+                        attempterId: socket.userId 
+                    });
+                    socket.emit('deleteMessageError', { message: 'You are not authorized to delete this message.' });
+                    return;
+                }
+
+                message.isDeleted = true;
+                message.deletedAt = new Date();
+                message.content = 'Bu mesaj silindi';
+                await message.save();
+
+                io.to(chatId).emit('messageDeleted', { messageId: message._id, chatId: message.chat });
+                logger.info('Message soft-deleted by owner', { 
+                    messageId, 
+                    userId: socket.userId, 
+                    chatId 
+                });
+            } catch (error) {
+                logger.error('Error deleting message', { userId: socket.userId, error: error.message });
+                socket.emit('deleteMessageError', { message: 'Could not delete the message.' });
+            }
         });
 
+        // --- DOLDURULMUŞ KISIM: EMOJİ İLE TEPKİ VERME ---
         socket.on('reactToMessage', async (data) => {
-          // ... (Daha önceki cevaptaki emoji tepki mantığı)
+            try {
+                const { messageId, chatId, emoji } = data;
+                const userId = socket.userId;
+                const message = await Message.findById(messageId);
+
+                if (!message || message.isDeleted) {
+                    socket.emit('reactToMessageError', { message: 'Message not found.' });
+                    return;
+                }
+
+                const existingReactionIndex = message.reactions.findIndex(
+                    (reaction) => reaction.user.toString() === userId
+                );
+
+                if (existingReactionIndex > -1) {
+                    if (message.reactions[existingReactionIndex].emoji === emoji) {
+                        message.reactions.splice(existingReactionIndex, 1); // Tepkiyi kaldır
+                    } else {
+                        message.reactions[existingReactionIndex].emoji = emoji; // Tepkiyi değiştir
+                    }
+                } else {
+                    message.reactions.push({ user: userId, emoji: emoji }); // Yeni tepki ekle
+                }
+
+                await message.save();
+
+                io.to(chatId).emit('messageReactionUpdated', {
+                    messageId: message._id,
+                    reactions: message.reactions,
+                });
+                logger.info('User reacted to message', { userId, messageId, emoji });
+            } catch (error) {
+                logger.error('Error reacting to message', { userId: socket.userId, error: error.message });
+                socket.emit('reactToMessageError', { message: 'Could not react to the message.' });
+            }
         });
         
         socket.on('startTyping', (data) => {
@@ -119,5 +182,5 @@ function initializeSocket(httpServer) {
 
 module.exports = {
     initializeSocket,
-    redisClient
+    redisClient,
 };
