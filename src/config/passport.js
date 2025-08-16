@@ -3,7 +3,7 @@ const User = require('../features/users/user.model');
 
 // JWT'nin header'dan nasıl okunacağını belirleyen seçenekler
 const jwtOptions = {
-    secretOrKey: process.env.JWT_SECRET,
+    secretOrKey: config.jwt.secret,
     jwtFromRequest: ExtractJwt.fromAuthHeaderAsBearerToken(),
 };
 
