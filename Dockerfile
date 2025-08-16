@@ -1,43 +1,27 @@
-# ----------------------------------------------------------------
-# 1. AŞAMA: İNŞAATÇI (BUILDER) - Bağımlılıklar kurulur ve kod derlenir
-# ----------------------------------------------------------------
-FROM node:22-slim AS builder
-
-WORKDIR /usr/src/app
-
-# Sadece package.json dosyalarını kopyala
-COPY package*.json ./
-
-# Hem production hem de development bağımlılıklarını kur (typescript'i kurmak için)
-RUN npm install
-
-# Kaynak kodun geri kalanını kopyala
-COPY . .
-
-# TypeScript kodunu JavaScript'e derle
-# Bu komut package.json dosyanızdaki "build" script'ini çalıştırır
-# Genellikle "tsc" komutunu çalıştırarak /dist klasörü oluşturur.
-RUN npm run build
-
-# Sadece production bağımlılıklarını yeniden kurarak imaj boyutunu küçült
-RUN npm prune --production
-
-# ----------------------------------------------------------------
-# 2. AŞAMA: NİHAİ (FINAL) - Sadece çalışan uygulama buraya gelir
-# ----------------------------------------------------------------
+# 1. Adım: Temel Node.js imajını seç
+# Projenizle uyumlu bir Node.js sürümü kullanın (22-slim iyi bir başlangıç)
 FROM node:22-slim
 
-WORKDIR /usr/src/app
+# 2. Adım: Uygulama için çalışma dizini oluştur
+# Konteyner içindeki tüm işlemler bu klasörde yapılacak
+WORKDIR /app
 
-# "builder" aşamasından SADECE GEREKLİ dosyaları kopyala
-# 1. Production node_modules klasörünü kopyala
-COPY --from=builder /usr/src/app/node_modules ./node_modules
-# 2. Derlenmiş JavaScript kodunun bulunduğu "dist" klasörünü kopyala
-COPY --from=builder /usr/src/app/dist ./dist
+# 3. Adım: Bağımlılık dosyalarını kopyala
+# 'npm install' komutunu sadece bu dosyalar değiştiğinde çalıştırmak performansı artırır
+COPY package*.json ./
 
-# Uygulamanın çalışacağı port
+# 4. Adım: Proje bağımlılıklarını kur
+# Sadece production için gerekli paketleri kurar, imaj boyutunu küçültür
+RUN npm install --omit=dev
+
+# 5. Adım: Proje dosyalarının geri kalanını kopyala
+# Kaynak kodunuzu (src klasörü vb.) konteynere kopyala
+COPY . .
+
+# 6. Adım: Uygulamanın çalışacağı portu belirt
+# Cloud Run bu portu dinamik olarak ayarlayacaktır
 ENV PORT 8080
 
-# Uygulamayı, derlenmiş JavaScript dosyasıyla başlat
-# Ana dosyanız dist/index.js ise bu satır doğrudur. Farklıysa güncelleyin.
-CMD [ "node", "dist/index.js" ]
+# 7. Adım: Uygulamayı başlat
+# Node.js'e 'src' klasörünün içindeki 'app.js' dosyasını çalıştırmasını söyle
+CMD [ "node", "src/app.js" ]
