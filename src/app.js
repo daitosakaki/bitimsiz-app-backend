@@ -10,12 +10,16 @@ const v1Routes = require('./api/v1');
 const { errorConverter, errorHandler } = require('./middlewares/error.handler');
 const ApiError = require('./utils/ApiError');
 
+const port = 8080;
 const app = express();
 
 if (config.env !== 'test') {
   app.use(morganMiddleware);
 }
 
+app.listen(port, () => {
+  console.log(`Sunucu ${port} portunda çalışıyor...`);
+});
 app.use(helmet());
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
