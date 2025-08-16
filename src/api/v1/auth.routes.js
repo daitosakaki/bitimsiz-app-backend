@@ -1,7 +1,7 @@
 const express = require('express');
 const authController = require('../../features/auth/auth.controller');
 const authMiddleware = require('../../middlewares/auth.middleware');
-const validate = require('../../middlewares/validate.middleware');
+const { validate } = require('../../middlewares/validate.middleware');
 const { authValidation } = require('../../features/auth/auth.validation');
 const rateLimit = require('express-rate-limit');
 
