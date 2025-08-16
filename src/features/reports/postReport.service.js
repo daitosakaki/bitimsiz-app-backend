@@ -1,4 +1,4 @@
-const Report = require('./report.model');
+const Report = require('./postReport.model');
 const Post = require('../posts/post.model');
 const { logger } = require('../../config/logger');
 

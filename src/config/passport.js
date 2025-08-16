@@ -1,3 +1,4 @@
+const config = require('./index');
 const { Strategy: JwtStrategy, ExtractJwt } = require('passport-jwt');
 const User = require('../features/users/user.model');
 

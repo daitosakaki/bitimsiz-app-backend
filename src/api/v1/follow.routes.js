@@ -1,7 +1,6 @@
 const express = require('express');
 const auth = require('../../middlewares/auth.middleware');
-// Gerekli controller fonksiyonları buraya import edilecek.
-// Bunun için de bir follow.controller.js oluşturmak gerekir.
+const followController = require('../../features/users/follow.controller'); // <-- DÜZELTİLDİ
 
 const router = express.Router();
 
@@ -12,6 +11,6 @@ router.get('/requests/pending', auth(), followController.getPendingRequests);
 router.post('/requests/:requestId/approve', auth(), followController.approveRequest);
 
 // Bir takip isteğini reddeder
-router.post('/requests/:requestId/deny', auth(), followController.denyRequest);
+router.delete('/requests/:requestId/deny', auth(), followController.denyRequest); // Metodu DELETE olarak değiştirmek daha doğru
 
 module.exports = router;

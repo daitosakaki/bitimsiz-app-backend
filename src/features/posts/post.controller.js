@@ -1,7 +1,7 @@
 const httpStatus = require('http-status');
+const postReportService = require('../reports/postReport.service'); 
 const postService = require('./post.service');
 const interactionService = require('../interactions/interaction.service');
-const reportService = require('../reports/report.service');
 const catchAsync = require('../../utils/catchAsync');
 const { logger } = require('../../config/logger');
 
@@ -51,7 +51,7 @@ const bookmarkPost = catchAsync(async (req, res) => {
 
 const reportPost = catchAsync(async (req, res) => {
     const { reason, details } = req.body;
-    await reportService.createReport(req.params.postId, req.user.id, reason, details);
+    await postReportService.createPostReport(req.params.postId, req.user.id, reason, details); // <-- GÜNCELLENDİ
     res.status(httpStatus.CREATED).send({ message: 'Post has been reported successfully.' });
 });
 

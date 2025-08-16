@@ -146,10 +146,16 @@ const denyFollowRequest = async (requestId, currentUserId) => {
 
 // const redisClient = require('../../socket').redisClient; // Redis client'ı export etmeniz gerekir
 const getOnlineStatus = async (userIds) => {
+    if (!redisClient.isReady) {
+        logger.warn('Redis client is not ready for online status check.');
+        // Redis hazır değilse, tüm kullanıcıları offline varsayabiliriz.
+        const offlineStatuses = {};
+        userIds.forEach(id => { offlineStatuses[id] = false; });
+        return offlineStatuses;
+    }
     const onlineStatuses = {};
     for (const userId of userIds) {
-        // sIsMember, bir elemanın sette olup olmadığını kontrol eder
-        onlineStatuses[userId] = await redisClient.sIsMember('online_users', userId);
+        onlineStatuses[userId] = await redisClient.sIsMember('online_users', userId.toString());
     }
     return onlineStatuses;
 };

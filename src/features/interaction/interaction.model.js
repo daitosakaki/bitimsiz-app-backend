@@ -8,7 +8,6 @@ const interactionSchema = new mongoose.Schema({
     timestamps: true,
 });
 
-interactionSchema.index({ user: 1, post: 1 }, { unique: true });
-
+interactionSchema.index({ user: 1, post: 1, type: 1 }, { unique: true });
 const Interaction = mongoose.model('Interaction', interactionSchema);
 module.exports = Interaction;

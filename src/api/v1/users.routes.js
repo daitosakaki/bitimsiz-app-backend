@@ -1,3 +1,5 @@
+const { validate } = require('../../middlewares/validate.middleware');
+const { userValidation } = require('../../features/users/user.validation');
 const express = require('express');
 const auth = require('../../middlewares/auth.middleware'); // Passport versiyonunu import ettiğimizi varsayalım
 const userController = require('../../features/users/user.controller');

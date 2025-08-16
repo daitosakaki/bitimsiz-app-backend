@@ -4,7 +4,8 @@ const userRoutes = require('./users.routes');
 const postRoutes = require('./posts.routes');
 const chatRoutes = require('./chats.routes');
 const messageRoutes = require('./messages.routes');
-//
+const followRoutes = require('./follow.routes'); // <-- EKLENDİ
+
 const router = express.Router();
 
 const defaultRoutes = [
@@ -13,6 +14,7 @@ const defaultRoutes = [
   { path: '/posts', route: postRoutes },
   { path: '/chats', route: chatRoutes },
   { path: '/messages', route: messageRoutes },
+  { path: '/follow', route: followRoutes }, // <-- EKLENDİ
 ];
 
 defaultRoutes.forEach((route) => {

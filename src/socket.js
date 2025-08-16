@@ -117,4 +117,7 @@ function initializeSocket(httpServer) {
     });
 }
 
-module.exports = initializeSocket;
+module.exports = {
+    initializeSocket,
+    redisClient
+};
