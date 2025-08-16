@@ -1,4 +1,7 @@
 {
+  "scripts": {
+    "build": "tsc"
+  },
   "dependencies": {
     "@google-cloud/storage": "^7.16.0",
     "bcryptjs": "^3.0.2",
