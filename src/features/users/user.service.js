@@ -12,34 +12,63 @@ const { logger } = require('../../config/logger');
  * @returns {Promise<object>}
  */
 const getUserByUsername = async (username, requestingUser) => {
-    const user = await User.findOne({ username });
-    if (!user) {
-        throw new ApiError(httpStatus.NOT_FOUND, 'User not found');
+    const cacheKey = `user:${username}`;
+
+    let userJson; // Kullanıcı verisini tutacak değişken
+
+    // 1. Statik Kullanıcı Verisini Redis'ten Getir
+    if (redisClient.isReady) {
+        const cachedUser = await redisClient.get(cacheKey);
+        if (cachedUser) {
+            userJson = JSON.parse(cachedUser);
+        }
     }
 
-    let followStatus = null; // Takip durumu: null, 'pending', 'approved'
+    // 2. Cache'te Yoksa Veritabanından Getir ve Cache'le
+    if (!userJson) {
+        const user = await User.findOne({ username });
+        if (!user) {
+            throw new ApiError(httpStatus.NOT_FOUND, 'User not found');
+        }
+        userJson = user.toJSON(); // toJSON() ile hassas verileri temizle
+
+        // Temel, statik kullanıcı verisini cache'le
+        if (redisClient.isReady) {
+            // Cache süresini (örn: 1 saat) ihtiyaca göre ayarla
+            await redisClient.set(cacheKey, JSON.stringify(userJson), { 'EX': 3600 });
+        }
+    }
+
+    // 3. Dinamik Veriyi (Takip Durumu) Her Zaman Ayrı Hesapla
+    let followStatus = null;
     if (requestingUser) {
-        const relation = await Follow.findOne({ follower: requestingUser.id, following: user.id });
-        if (relation) followStatus = relation.status;
+        // Bu sorgu oldukça hızlıdır ve her istekte çalışabilir
+        const relation = await Follow.findOne({ follower: requestingUser.id, following: userJson._id }).select('status');
+        if (relation) {
+            followStatus = relation.status;
+        }
     }
     
-    const isOwner = requestingUser ? user.id === requestingUser.id : false;
+    // 4. Yetkilendirme ve Son Veriyi Oluşturma
+    const isOwner = requestingUser ? userJson._id.toString() === requestingUser.id : false;
 
-    if (user.isPrivate && followStatus !== 'approved' && !isOwner) {
+    // Gizli profil mantığı
+    if (userJson.isPrivate && followStatus !== 'approved' && !isOwner) {
+        // Sadece izin verilen alanları döndür
         return {
-            _id: user._id,
-            username: user.username,
-            displayName: user.displayName,
-            profileImageUrl: user.profileImageUrl,
-            bio: user.bio,
+            _id: userJson._id,
+            username: userJson.username,
+            displayName: userJson.displayName,
+            profileImageUrl: userJson.profileImageUrl,
+            bio: userJson.bio,
             isPrivate: true,
-            followerCount: user.followerCount,
-            followingCount: user.followingCount,
-            followStatus,
+            followerCount: userJson.followerCount,
+            followingCount: userJson.followingCount,
+            followStatus, // Dinamik olarak hesaplanan doğru durumu ekle
         };
     }
-    
-    const userJson = user.toJSON();
+
+    // Herkese açık profil veya yetkili kullanıcı için tam veri
     userJson.followStatus = followStatus;
     return userJson;
 };
@@ -66,25 +95,29 @@ const updateUserById = async (userId, updateBody) => {
 /**
  * Bir kullanıcıyı takip etme veya takip isteği gönderme işlemini yönetir.
  */
+
+
 const handleFollowAction = async (userIdToFollow, followerId) => {
-    if (userIdToFollow === followerId) throw new ApiError(httpStatus.BAD_REQUEST, 'You cannot follow yourself.');
+    // ... ön kontroller ...
 
-    const targetUser = await User.findById(userIdToFollow);
-    if (!targetUser) throw new ApiError(httpStatus.NOT_FOUND, 'User to follow not found.');
-    
-    const existingRelation = await Follow.findOne({ follower: followerId, following: userIdToFollow });
-    if (existingRelation) throw new ApiError(httpStatus.BAD_REQUEST, 'A follow request already exists or is completed.');
+    const session = await mongoose.startSession();
+    session.startTransaction();
+    try {
+        if (targetUser.isPrivate) {
+            await Follow.create([{ follower: followerId, following: userIdToFollow, status: 'pending' }], { session });
+        } else {
+            await Follow.create([{ follower: followerId, following: userIdToFollow, status: 'approved' }], { session });
+            await User.findByIdAndUpdate(followerId, { $inc: { followingCount: 1 } }, { session });
+            await User.findByIdAndUpdate(userIdToFollow, { $inc: { followerCount: 1 } }, { session });
+        }
 
-    if (targetUser.isPrivate) {
-        await Follow.create({ follower: followerId, following: userIdToFollow, status: 'pending' });
-        logger.info('Follow request sent', { followerId, followedId: userIdToFollow });
-    } else {
-        await Follow.create({ follower: followerId, following: userIdToFollow, status: 'approved' });
-        await Promise.all([
-            User.findByIdAndUpdate(followerId, { $inc: { followingCount: 1 } }),
-            User.findByIdAndUpdate(userIdToFollow, { $inc: { followerCount: 1 } }),
-        ]);
-        logger.info('User followed directly (public profile)', { followerId, followedId: userIdToFollow });
+        await session.commitTransaction();
+        logger.info('Follow action successful', { followerId, followedId: userIdToFollow });
+    } catch (error) {
+        await session.abortTransaction();
+        throw error; // Hatanın global error handler'a gitmesini sağla
+    } finally {
+        session.endSession();
     }
 };
 

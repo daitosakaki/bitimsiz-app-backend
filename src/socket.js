@@ -13,18 +13,18 @@ const redisClient = createClient({ url: config.redis.url });
 redisClient.on('error', (err) => logger.error('Redis Client Error', err));
 
 async function setUserOnline(userId) {
-  await redisClient.sAdd('online_users', userId);
+    await redisClient.sAdd('online_users', userId);
 }
 
 async function setUserOffline(userId) {
-  await redisClient.sRem('online_users', userId);
-  // Kullanıcının "son görülme" zamanını güncelle
-  await User.findByIdAndUpdate(userId, { lastSeen: new Date() });
+    await redisClient.sRem('online_users', userId);
+    // Kullanıcının "son görülme" zamanını güncelle
+    await User.findByIdAndUpdate(userId, { lastSeen: new Date() });
 }
 
 function initializeSocket(httpServer) {
     const io = new Server(httpServer, { cors: { origin: config.cors.origin } });
-    
+
     redisClient.connect().then(() => {
         const subClient = redisClient.duplicate();
         io.adapter(createAdapter(redisClient, subClient));
@@ -53,7 +53,7 @@ function initializeSocket(httpServer) {
             socket.join(chatId);
             logger.info('User joined chat room', { userId: socket.userId, chatId });
         });
-        
+
         socket.on('leaveRoom', (chatId) => {
             socket.leave(chatId);
             logger.info('User left chat room', { userId: socket.userId, chatId });
@@ -62,6 +62,15 @@ function initializeSocket(httpServer) {
         socket.on('sendMessage', async (data) => {
             try {
                 const { chatId, content, replyTo } = data;
+
+                // --- YETKİLENDİRME KONTROLÜ ---
+                const chat = await Chat.findOne({ _id: chatId, members: socket.userId });
+                if (!chat) {
+                    logger.warn('Unauthorized attempt to send message to chat', { userId: socket.userId, chatId });
+                    return socket.emit('sendMessageError', { message: 'You are not a member of this chat.' });
+                }
+                // --- KONTROL SONU ---
+
                 // TODO: Kullanıcının bu chat'e üye olup olmadığını kontrol et
                 const message = await Message.create({
                     chat: chatId,
@@ -82,16 +91,16 @@ function initializeSocket(httpServer) {
         });
 
         socket.on('editMessage', async (data) => {
-          const { messageId, chatId, newContent } = data;
-          const message = await Message.findById(messageId);
-          if (message && message.sender.toString() === socket.userId) {
-            message.content = newContent;
-            message.isEdited = true;
-            message.editedAt = new Date();
-            await message.save();
-            io.to(chatId).emit('messageEdited', { messageId, newContent });
-            logger.info('Message edited', { userId: socket.userId, messageId });
-          }
+            const { messageId, chatId, newContent } = data;
+            const message = await Message.findById(messageId);
+            if (message && message.sender.toString() === socket.userId) {
+                message.content = newContent;
+                message.isEdited = true;
+                message.editedAt = new Date();
+                await message.save();
+                io.to(chatId).emit('messageEdited', { messageId, newContent });
+                logger.info('Message edited', { userId: socket.userId, messageId });
+            }
         });
 
         // --- DOLDURULMUŞ KISIM: MESAJ SİLME ---
@@ -101,9 +110,9 @@ function initializeSocket(httpServer) {
                 const message = await Message.findById(messageId);
 
                 if (!message || message.sender.toString() !== socket.userId) {
-                    logger.warn('Unauthorized attempt to delete message', { 
-                        messageId, 
-                        attempterId: socket.userId 
+                    logger.warn('Unauthorized attempt to delete message', {
+                        messageId,
+                        attempterId: socket.userId
                     });
                     socket.emit('deleteMessageError', { message: 'You are not authorized to delete this message.' });
                     return;
@@ -115,10 +124,10 @@ function initializeSocket(httpServer) {
                 await message.save();
 
                 io.to(chatId).emit('messageDeleted', { messageId: message._id, chatId: message.chat });
-                logger.info('Message soft-deleted by owner', { 
-                    messageId, 
-                    userId: socket.userId, 
-                    chatId 
+                logger.info('Message soft-deleted by owner', {
+                    messageId,
+                    userId: socket.userId,
+                    chatId
                 });
             } catch (error) {
                 logger.error('Error deleting message', { userId: socket.userId, error: error.message });
@@ -164,7 +173,7 @@ function initializeSocket(httpServer) {
                 socket.emit('reactToMessageError', { message: 'Could not react to the message.' });
             }
         });
-        
+
         socket.on('startTyping', (data) => {
             socket.to(data.chatId).emit('typing', { userId: socket.userId });
         });
