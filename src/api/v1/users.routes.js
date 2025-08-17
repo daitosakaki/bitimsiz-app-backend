@@ -23,7 +23,7 @@ router.route('/:userId/follow')
 // Bu rota halka açıktır, ancak auth() middleware'i olmadan da çalışabilir.
 // Servis katmanındaki gizlilik mantığı korumayı sağlar.
 // İsteğe bağlı kimlik doğrulama için auth(true) gibi bir yapı da kurulabilir.
-router.get('/@:username', userController.getUserByUsername);
+router.get('/:username', userController.getUserByUsername);
 
 router.route('/me/addresses')
     .get(auth(), userController.getAddresses)
