@@ -1,7 +1,7 @@
 const http = require('http');
 const mongoose = require('mongoose');
 const app = require('./app');
-const initializeSocket = require('./socket');
+const { initializeSocket } = require('./socket');
 const config = require('./config');
 const { logger } = require('./config/logger');
 const initializeFirebase = require('./config/firebase');
