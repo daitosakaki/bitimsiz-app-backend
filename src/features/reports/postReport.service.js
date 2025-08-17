@@ -2,7 +2,7 @@ const Report = require('./postReport.model');
 const Post = require('../posts/post.model');
 const { logger } = require('../../config/logger');
 
-const createReport = async (postId, userId, reason, details) => {
+const createPostReport = async (postId, userId, reason, details) => {
     const report = await Report.create({
         post: postId,
         user: userId,
@@ -14,4 +14,4 @@ const createReport = async (postId, userId, reason, details) => {
     return report;
 };
 
-module.exports = { createReport };
+module.exports = { createPostReport };

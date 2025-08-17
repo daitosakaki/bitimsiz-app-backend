@@ -23,7 +23,16 @@ const createPost = async (userId, postBody, reqMetadata) => {
         metadata: { ...postBody.metadata, ipAddress: reqMetadata.ip, deviceInfo: reqMetadata.userAgent },
     };
     const post = await Post.create(postData);
+
+    // Yazarın kendi post sayısını artır
     await User.findByIdAndUpdate(userId, { $inc: { postCount: 1 } });
+
+    // Eğer bu bir reply, quote veya repost ise, orijinal postun istatistiklerini güncelle.
+    if (post.originalPost) {
+        const updateField = `statistics.${post.type}Count`; // 'statistics.replyCount' gibi
+        await Post.findByIdAndUpdate(post.originalPost, { $inc: { [updateField]: 1 } });
+    }
+
     return post;
 };
 

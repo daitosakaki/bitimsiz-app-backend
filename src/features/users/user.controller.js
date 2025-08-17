@@ -4,11 +4,13 @@ const catchAsync = require('../../utils/catchAsync');
 
 // getMe, updateMe, getUserByUsername, follow, unfollow aynı kalır...
 const getMe = catchAsync(async (req, res) => {
+    logger.info(`User accessed their own profile data.`, { userId: req.user.id, ip: req.ip });
     res.send(req.user.toJSON());
 });
 
 const updateMe = catchAsync(async (req, res) => {
     const user = await userService.updateUserById(req.user.id, req.body);
+    logger.info(`User successfully updated their profile.`, { userId: req.user.id, updatedFields: Object.keys(req.body) });
     res.send(user);
 });
 
@@ -29,11 +31,13 @@ const unfollow = catchAsync(async (req, res) => {
 // --- YENİ ADRES CONTROLLER'LARI ---
 const getAddresses = catchAsync(async (req, res) => {
     const addresses = await userService.getAddressesByUserId(req.user.id);
+    logger.info(`User accessed their address list.`, { userId: req.user.id, ip: req.ip });
     res.send(addresses);
 });
 
 const addAddress = catchAsync(async (req, res) => {
     const address = await userService.addAddress(req.user.id, req.body);
+    logger.info(`User added a new address.`, { userId: req.user.id, addressId: address.id });
     res.status(httpStatus.CREATED).send(address);
 });
 
@@ -44,6 +48,7 @@ const updateAddress = catchAsync(async (req, res) => {
 
 const deleteAddress = catchAsync(async (req, res) => {
     await userService.deleteAddress(req.user.id, req.params.addressId);
+    logger.info(`User deleted an address.`, { userId: req.user.id, addressId: req.params.addressId });
     res.status(httpStatus.NO_CONTENT).send();
 });
 

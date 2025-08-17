@@ -49,7 +49,7 @@ const getUserByUsername = async (username, requestingUser) => {
             followStatus = relation.status;
         }
     }
-    
+
     // 4. Yetkilendirme ve Son Veriyi Oluşturma
     const isOwner = requestingUser ? userJson._id.toString() === requestingUser.id : false;
 
@@ -75,7 +75,7 @@ const getUserByUsername = async (username, requestingUser) => {
 };
 
 /**
- * Bir kullanıcının profilini günceller.
+ * Kullanıcı profilini günceller ve cache'i temizler.
  * @param {string} userId - Güncellenecek kullanıcının ID'si
  * @param {object} updateBody - Güncellenecek alanlar
  * @returns {Promise<User>}
@@ -86,53 +86,116 @@ const updateUserById = async (userId, updateBody) => {
 
     delete updateBody.email;
     delete updateBody.password;
-    delete updateBody.role; // Kullanıcı kendi rolünü değiştiremez
+    delete updateBody.role;
 
     Object.assign(user, updateBody);
     await user.save();
+
+    // --- IYILESTIRME: Cache Invalidation ---
+    // Kullanıcı güncellendiğinde Redis cache'ini temizle
+    if (redisClient.isReady) {
+        await redisClient.del(`user:${user.username}`);
+        logger.info(`Cache invalidated for user: ${user.username}`);
+    }
+
     return user;
 };
-
 /**
- * Bir kullanıcıyı takip etme veya takip isteği gönderme işlemini yönetir.
+ * Bir kullanıcıyı takip etme veya takip isteği gönderme işlemini atomik olarak yönetir.
+ * @param {string} userIdToFollow Takip edilecek kullanıcının ID'si
+ * @param {string} followerId Takip eden kullanıcının ID'si
  */
-
-
 const handleFollowAction = async (userIdToFollow, followerId) => {
-    // ... ön kontroller ...
+    // --- IYILESTIRME: Ön Kontroller Eklendi ---
+    if (userIdToFollow === followerId) {
+        throw new ApiError(httpStatus.BAD_REQUEST, 'You cannot follow yourself.');
+    }
 
+    const targetUser = await User.findById(userIdToFollow);
+    if (!targetUser) {
+        throw new ApiError(httpStatus.NOT_FOUND, 'User to follow not found.');
+    }
+
+    const existingFollow = await Follow.findOne({ follower: followerId, following: userIdToFollow });
+    if (existingFollow) {
+        throw new ApiError(httpStatus.BAD_REQUEST, 'You are already following or have a pending request for this user.');
+    }
+
+    // --- IYILESTIRME: Mongoose Transaction Kullanımı ---
     const session = await mongoose.startSession();
     session.startTransaction();
     try {
-        if (targetUser.isPrivate) {
-            await Follow.create([{ follower: followerId, following: userIdToFollow, status: 'pending' }], { session });
-        } else {
-            await Follow.create([{ follower: followerId, following: userIdToFollow, status: 'approved' }], { session });
+        const status = targetUser.isPrivate ? 'pending' : 'approved';
+        await Follow.create([{ follower: followerId, following: userIdToFollow, status }], { session });
+
+        if (status === 'approved') {
             await User.findByIdAndUpdate(followerId, { $inc: { followingCount: 1 } }, { session });
             await User.findByIdAndUpdate(userIdToFollow, { $inc: { followerCount: 1 } }, { session });
         }
 
         await session.commitTransaction();
-        logger.info('Follow action successful', { followerId, followedId: userIdToFollow });
+
+        // --- IYILESTIRME: Cache Invalidation ---
+        if (status === 'approved' && redisClient.isReady) {
+            await Promise.all([
+                redisClient.del(`user:${(await User.findById(followerId).select('username')).username}`),
+                redisClient.del(`user:${targetUser.username}`)
+            ]);
+            logger.info(`Cache invalidated for users after follow action.`);
+        }
+
+        logger.info('Follow action successful', { followerId, followedId: userIdToFollow, status });
+        return { status }; // Durum bilgisini döndür
     } catch (error) {
         await session.abortTransaction();
-        throw error; // Hatanın global error handler'a gitmesini sağla
+        logger.error('Follow action failed and transaction was aborted.', { error, followerId, followedId: userIdToFollow });
+        throw new ApiError(httpStatus.INTERNAL_SERVER_ERROR, 'Could not complete follow action.');
     } finally {
         session.endSession();
     }
 };
-
 /**
  * Onaylanmış bir takibi bırakır.
  */
 const unfollowUser = async (userIdToUnfollow, followerId) => {
-    const deletedFollow = await Follow.findOneAndDelete({ follower: followerId, following: userIdToUnfollow, status: 'approved' });
-    if (deletedFollow) {
-        await Promise.all([
-            User.findByIdAndUpdate(followerId, { $inc: { followingCount: -1 } }),
-            User.findByIdAndUpdate(userIdToUnfollow, { $inc: { followerCount: -1 } }),
-        ]);
+    const session = await mongoose.startSession();
+    session.startTransaction();
+    let unfollowedUser = null;
+    try {
+        const deletedFollow = await Follow.findOneAndDelete(
+            { follower: followerId, following: userIdToUnfollow, status: 'approved' },
+            { session }
+        );
+
+        if (deletedFollow) {
+            await User.findByIdAndUpdate(followerId, { $inc: { followingCount: -1 } }, { session });
+            unfollowedUser = await User.findByIdAndUpdate(userIdToUnfollow, { $inc: { followerCount: -1 } }, { session });
+        } else {
+            // Eğer böyle bir takip ilişkisi yoksa işlemi sonlandır.
+            throw new ApiError(httpStatus.NOT_FOUND, 'You are not following this user.');
+        }
+
+        await session.commitTransaction();
+
+        // --- IYILESTIRME: Cache Invalidation ---
+        if (unfollowedUser && redisClient.isReady) {
+            await Promise.all([
+                redisClient.del(`user:${(await User.findById(followerId).select('username')).username}`),
+                redisClient.del(`user:${unfollowedUser.username}`)
+            ]);
+            logger.info(`Cache invalidated for users after unfollow action.`);
+        }
         logger.info('User unfollowed', { followerId, unfollowedId: userIdToUnfollow });
+    } catch (error) {
+        await session.abortTransaction();
+        logger.error('Unfollow action failed and transaction was aborted.', { error, followerId, unfollowedId: userIdToUnfollow });
+        // Eğer hata bizim ApiError'umuz değilse, genel bir hata fırlat
+        if (!(error instanceof ApiError)) {
+            throw new ApiError(httpStatus.INTERNAL_SERVER_ERROR, 'Could not complete unfollow action.');
+        }
+        throw error;
+    } finally {
+        session.endSession();
     }
 };
 
@@ -199,15 +262,21 @@ const getAddressesByUserId = async (userId) => Address.find({ user: userId }).so
 const addAddress = async (userId, addressBody) => Address.create({ ...addressBody, user: userId });
 const updateAddress = async (userId, addressId, updateBody) => {
     const address = await Address.findOne({ _id: addressId, user: userId });
-    if (!address) throw new ApiError(httpStatus.NOT_FOUND, 'Address not found or permission denied.');
+    if (!address) {
+        logger.warn('Failed attempt to update address.', { attempterId: userId, addressId });
+        throw new ApiError(httpStatus.NOT_FOUND, 'Address not found or permission denied.');
+    }
     Object.assign(address, updateBody);
     await address.save();
     return address;
 };
 const deleteAddress = async (userId, addressId) => {
     const result = await Address.deleteOne({ _id: addressId, user: userId });
-    if (result.deletedCount === 0) throw new ApiError(httpStatus.NOT_FOUND, 'Address not found or permission denied.');
-};
+    if (result.deletedCount === 0) {
+        logger.warn('Failed attempt to delete address.', { attempterId: userId, addressId });
+        throw new ApiError(httpStatus.NOT_FOUND, 'Address not found or permission denied.');
+    };
+}
 
 module.exports = {
     getUserByUsername,

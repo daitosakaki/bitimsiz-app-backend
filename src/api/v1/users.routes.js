@@ -15,7 +15,7 @@ router.route('/me')
 
 // Bir kullanıcıyı takip etme ve takipten çıkma rotaları
 // Bu işlemler için giriş yapmış olmak zorunludur.
-router.route('/:userId/follow')
+router.route('/:userIdToFollow/follow')
     .post(auth(), userController.follow)
     .delete(auth(), userController.unfollow);
 

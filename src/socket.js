@@ -92,6 +92,14 @@ function initializeSocket(httpServer) {
 
         socket.on('editMessage', async (data) => {
             const { messageId, chatId, newContent } = data;
+            
+            // --- IYILESTIRME: Yetkilendirme Kontrolü ---
+            const chat = await Chat.findOne({ _id: chatId, members: socket.userId });
+            if (!chat) {
+                logger.warn('Unauthorized attempt to edit message in a chat they are not part of', { userId: socket.userId, chatId });
+                return socket.emit('editMessageError', { message: 'Authorization failed.' });
+            }
+
             const message = await Message.findById(messageId);
             if (message && message.sender.toString() === socket.userId) {
                 message.content = newContent;
@@ -103,19 +111,22 @@ function initializeSocket(httpServer) {
             }
         });
 
-        // --- DOLDURULMUŞ KISIM: MESAJ SİLME ---
         socket.on('deleteMessage', async (data) => {
             try {
                 const { messageId, chatId } = data;
+
+                // --- IYILESTIRME: Yetkilendirme Kontrolü ---
+                const chat = await Chat.findOne({ _id: chatId, members: socket.userId });
+                 if (!chat) {
+                    logger.warn('Unauthorized attempt to delete message in a chat they are not part of', { userId: socket.userId, chatId });
+                    return socket.emit('deleteMessageError', { message: 'Authorization failed.' });
+                }
+
                 const message = await Message.findById(messageId);
 
                 if (!message || message.sender.toString() !== socket.userId) {
-                    logger.warn('Unauthorized attempt to delete message', {
-                        messageId,
-                        attempterId: socket.userId
-                    });
-                    socket.emit('deleteMessageError', { message: 'You are not authorized to delete this message.' });
-                    return;
+                    logger.warn('Unauthorized attempt to delete message', { messageId, attempterId: socket.userId });
+                    return socket.emit('deleteMessageError', { message: 'You are not authorized to delete this message.' });
                 }
 
                 message.isDeleted = true;
@@ -124,11 +135,7 @@ function initializeSocket(httpServer) {
                 await message.save();
 
                 io.to(chatId).emit('messageDeleted', { messageId: message._id, chatId: message.chat });
-                logger.info('Message soft-deleted by owner', {
-                    messageId,
-                    userId: socket.userId,
-                    chatId
-                });
+                logger.info('Message soft-deleted by owner', { messageId, userId: socket.userId, chatId });
             } catch (error) {
                 logger.error('Error deleting message', { userId: socket.userId, error: error.message });
                 socket.emit('deleteMessageError', { message: 'Could not delete the message.' });
