@@ -24,4 +24,4 @@ ENV PORT 8080
 
 # 7. Adım: Uygulamayı başlat
 # Node.js'e 'src' klasörünün içindeki 'app.js' dosyasını çalıştırmasını söyle
-CMD [ "node", "src/app.js" ]
+CMD [ "node", "src/server.js" ]
