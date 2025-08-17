@@ -191,5 +191,5 @@ function initializeSocket(httpServer) {
 
 module.exports = {
     initializeSocket,
-    redisClient,
+    redisClient
 };

@@ -4,6 +4,7 @@ const Follow = require('./follow.model');
 const Address = require('./address.model');
 const ApiError = require('../../utils/ApiError');
 const { logger } = require('../../config/logger');
+const { redisClient } = require('../../socket');
 
 /**
  * Kullanıcı adına göre bir kullanıcıyı getirir. Gizlilik ve takip durumunu kontrol eder.
