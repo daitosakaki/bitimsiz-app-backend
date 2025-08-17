@@ -95,6 +95,7 @@ const updateUserById = async (userId, updateBody) => {
     // Kullanıcı güncellendiğinde Redis cache'ini temizle
     if (redisClient.isReady) {
         await redisClient.del(`user:${user.username}`);
+        await redisClient.set(cacheKey, JSON.stringify(user.toJSON()), { 'EX': 3600 });
         logger.info(`Cache invalidated for user: ${user.username}`);
     }
 
