@@ -12,11 +12,11 @@ const verifyPhone = catchAsync(async (req, res) => {
 const register = catchAsync(async (req, res) => {
     const registrationToken = req.headers.authorization?.split(' ')[1];
     if (!registrationToken) {
-          logger.info('Registration token is required.', { ip: req.ip });
+          logger.warn('Registration token is required.', { ip: req.ip });
   throw new ApiError(httpStatus.BAD_REQUEST, 'Registration token is required.');
     }
     const result = await authService.registerUser(registrationToken, req.body);
-    // Güvenlik: Başarılı bir kayıt, önemli bir olaydır ve loglanmalıdır.
+    // Güvenlik: Başarılı bir kayıt log kaydı.
     logger.info('New user registered successfully', { userId: result.user.id, ip: req.ip });
     res.status(httpStatus.CREATED).send(result);
 });
