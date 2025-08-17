@@ -1,8 +1,8 @@
 const express = require('express');
 const auth = require('../../middlewares/auth.middleware');
-const { validate } = require('../../middlewares/validate.middleware'); // <-- EKLENDİ
+const { validate } = require('../../middlewares/validate.middleware');
 const userController = require('../../features/users/user.controller');
-const { userValidation, addressValidation } = require('../../features/users/user.validation'); // <-- EKLENDİ
+const { userValidation, addressValidation } = require('../../features/users/user.validation');
 
 const router = express.Router();
 
