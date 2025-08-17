@@ -3,7 +3,7 @@ const bcrypt = require('bcryptjs');
 
 const userSchema = new mongoose.Schema({
     firebaseUid: { type: String, required: true, unique: true, index: true },
-    FC tokens: [
+    fcmTokens: [
           { type: String }
     ],
     phoneNumber: { type: String, required: true, unique: true, index: true },
