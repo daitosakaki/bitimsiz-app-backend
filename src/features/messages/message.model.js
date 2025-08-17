@@ -17,5 +17,5 @@ const messageSchema = new mongoose.Schema(
 
 messageSchema.index({ members: 1 });
 
-const Message = mongoose.model('Chat', messageSchema);
+const Message = mongoose.model('Message', messageSchema);
 module.exports = Message;
