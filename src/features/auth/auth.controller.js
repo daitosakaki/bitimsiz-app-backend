@@ -12,7 +12,8 @@ const verifyPhone = catchAsync(async (req, res) => {
 const register = catchAsync(async (req, res) => {
     const registrationToken = req.headers.authorization?.split(' ')[1];
     if (!registrationToken) {
-        throw new ApiError(httpStatus.BAD_REQUEST, 'Registration token is required.');
+          logger.info('Registration token is required.', { ip: req.ip });
+  throw new ApiError(httpStatus.BAD_REQUEST, 'Registration token is required.');
     }
     const result = await authService.registerUser(registrationToken, req.body);
     // Güvenlik: Başarılı bir kayıt, önemli bir olaydır ve loglanmalıdır.
