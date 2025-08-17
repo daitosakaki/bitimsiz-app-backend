@@ -21,7 +21,7 @@ const envVarsSchema = Joi.object()
     GCS_BUCKET_NAME: Joi.string().required().description('Google Cloud Storage bucket name'),
     // Diğer zorunlu olmayan değişkenler buraya .optional() ile eklenebilir.
     PAYMENT_PROVIDER_SECRET_KEY: Joi.string().description('Payment provider secret key'),
-    FIREBASE_SERVICE_ACCOUNT_BASE64: Joi.string().description('FIREBASE_SERVICE_ACCOUNT_BASE64 secret key'),
+    FIREBASE_SERVICE_ACCOUNT_BASE64: Joi.string().required().description('Firebase service account key'),
   })
   .unknown(); // Bilinmeyen değişkenlere izin ver (örn: FIREBASE_... gibi)
 
