@@ -4,9 +4,10 @@ const app = require('./app');
 const initializeSocket = require('./socket');
 const config = require('./config');
 const { logger } = require('./config/logger');
+const initializeFirebase = require('./config/firebase');
 
 const server = http.createServer(app);
-
+initializeFirebase(config);
 // Socket.IO'yu başlat
 initializeSocket(server);
 
