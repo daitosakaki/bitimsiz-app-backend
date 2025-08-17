@@ -1,5 +1,5 @@
 const MessageReport = require('../reports/messageReport.model');
-const Message = require('./message.model');
+const Message = require('../chats/message.model');
 const { logger } = require('../../config/logger');
 
 const reportMessage = async (messageId, reporterId, reason) => {
