@@ -17,7 +17,6 @@ RUN npm install --omit=dev
 # 5. Adım: Proje dosyalarının geri kalanını kopyala
 # Kaynak kodunuzu (src klasörü vb.) konteynere kopyala
 COPY . .
-
 # 6. Adım: Uygulamanın çalışacağı portu belirt
 # Cloud Run bu portu dinamik olarak ayarlayacaktır
 ENV PORT 8080
