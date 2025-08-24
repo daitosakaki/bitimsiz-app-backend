@@ -2,9 +2,10 @@ const dotenv = require('dotenv');
 const path = require('path');
 const Joi = require('joi');
 
-// .env dosyasını projenin ana dizininde ara ve yükle
-dotenv.config({ path: path.join(__dirname, '../../.env') });
-
+if (process.env.NODE_ENV !== 'production') {
+  // .env dosyasını projenin ana dizininde ara ve yükle
+  dotenv.config({ path: path.join(__dirname, '../../.env') });
+}
 // Tüm ortam değişkenlerini Joi ile doğrulayarak bir şema oluşturalım.
 // Bu, eksik veya yanlış formatta bir değişken olduğunda uygulamanın
 // anlamlı bir hatayla başlamasını sağlar.
