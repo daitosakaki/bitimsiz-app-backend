@@ -2,47 +2,55 @@ const dotenv = require('dotenv');
 const path = require('path');
 const Joi = require('joi');
 
+// --- HATA AYIKLAMA İÇİN LOG EKLIYORUZ ---
+console.log('--- CONFIG DOSYASI BAŞLADI ---');
+console.log(`Mevcut NODE_ENV değeri: "${process.env.NODE_ENV}"`);
+console.log(`Mevcut NODE_ENV tipi: ${typeof process.env.NODE_ENV}`);
+// --- HATA AYIKLAMA SONU ---
+
+
+// Sadece 'production' olmayan ortamlarda .env dosyasını yükle.
 if (process.env.NODE_ENV !== 'production') {
-  // .env dosyasını projenin ana dizininde ara ve yükle
+  console.log('.env dosyası YÜKLENİYOR...');
   dotenv.config({ path: path.join(__dirname, '../../.env') });
+} else {
+  console.log('.env dosyası ATLANDI (production ortamı).');
 }
+
 // Tüm ortam değişkenlerini Joi ile doğrulayarak bir şema oluşturalım.
-// Bu, eksik veya yanlış formatta bir değişken olduğunda uygulamanın
-// anlamlı bir hatayla başlamasını sağlar.
 const envVarsSchema = Joi.object()
   .keys({
     NODE_ENV: Joi.string().valid('production', 'development', 'test').required(),
     PORT: Joi.number().default(8080),
     MONGODB_URI: Joi.string().required().description('Mongo DB url'),
     REDIS_URL: Joi.string().required().description('Redis url'),
+    // ... (diğer değişkenleriniz aynı kalacak)
     JWT_SECRET: Joi.string().required().description('JWT secret key'),
     JWT_EXPIRES_IN: Joi.string().default('15m').description('minutes for access token'),
     JWT_REFRESH_SECRET: Joi.string().required().description('JWT refresh secret key'),
     JWT_REFRESH_EXPIRES_IN: Joi.string().default('7d').description('days for refresh token'),
     GCS_BUCKET_NAME: Joi.string().required().description('Google Cloud Storage bucket name'),
-    // Diğer zorunlu olmayan değişkenler buraya .optional() ile eklenebilir.
-    PAYMENT_PROVIDER_SECRET_KEY: Joi.string().description('Payment provider secret key'),
+    CORS_ORIGIN: Joi.string().required().description('Allowed CORS origin'),
     FIREBASE_SERVICE_ACCOUNT_BASE64: Joi.string().required().description('Firebase service account key'),
+    PAYMENT_PROVIDER_SECRET_KEY: Joi.string().description('Payment provider secret key'),
   })
-  .unknown(); // Bilinmeyen değişkenlere izin ver (örn: FIREBASE_... gibi)
+  .unknown();
 
 const { value: envVars, error } = envVarsSchema.prefs({ errors: { label: 'key' } }).validate(process.env);
 
 if (error) {
+  // Hata öncesi durumu görmek için bir log daha ekleyelim
+  console.error('Joi validation hatası oluştu!');
   throw new Error(`Config validation error: ${error.message}`);
 }
 
-// Tüm yapılandırmayı tek bir nesne altında export edelim
+// ... dosyanın geri kalanı aynı ...
 module.exports = {
   env: envVars.NODE_ENV,
   port: envVars.PORT,
   mongoose: {
     url: envVars.MONGODB_URI,
-    options: {
-      // MongoDB ayarları (gerekirse)
-      // useNewUrlParser: true,
-      // useUnifiedTopology: true,
-    },
+    options: {},
   },
   redis: {
     url: envVars.REDIS_URL,
@@ -60,5 +68,4 @@ module.exports = {
     origin: envVars.CORS_ORIGIN,
   },
   FIREBASE_SERVICE_ACCOUNT_BASE64: envVars.FIREBASE_SERVICE_ACCOUNT_BASE64,
-  // Diğer konfigürasyonlar da bu nesneye eklenebilir
 };
