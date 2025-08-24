@@ -21,6 +21,4 @@ steps:
       - 'bitimsiz-app-connector'
       - '--vpc-egress'
       - 'all-traffic'
-
-       # Secret Manager'dan alınacak gizli anahtarlar
       - '--update-secrets=NODE_ENV=NODE_ENV:latest,CORS_ORIGIN=CORS_ORIGIN:latest,GCS_BUCKET_NAME=GCS_BUCKET_NAME:latest,MONGODB_URI=MONGODB_URI:latest,REDIS_URL=REDIS_URL:latest,JWT_SECRET=JWT_SECRET:latest,JWT_REFRESH_SECRET=JWT_REFRESH_SECRET:latest,FIREBASE_SERVICE_ACCOUNT_BASE64=FIREBASE_SERVICE_ACCOUNT_BASE64:latest,PHONE_ENCRYPTION_KEY=PHONE_ENCRYPTION_KEY:latest'

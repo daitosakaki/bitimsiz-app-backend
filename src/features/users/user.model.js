@@ -3,6 +3,9 @@ const bcrypt = require('bcryptjs');
 
 const userSchema = new mongoose.Schema({
     firebaseUid: { type: String, required: true, unique: true, index: true },
+    fcmTokens: [
+          { type: String }
+    ],
     phoneNumber: { type: String, required: true, unique: true, index: true },
     username: { type: String, required: true, unique: true, index: true, trim: true },
     email: { type: String, unique: true, sparse: true, trim: true, lowercase: true }, // sparse: null değerler için unique kuralını esnetir

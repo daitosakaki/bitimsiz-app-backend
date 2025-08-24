@@ -135,7 +135,8 @@ const resetPasswordWithFirebase = async (idToken, newPassword) => {
 const changePassword = async (userId, oldPassword, newPassword) => {
     const user = await User.findById(userId).select('+password');
     if (!user) {
-        throw new ApiError(httpStatus.NOT_FOUND, 'User not found.');
+       logger.warn(`User not found.`);
+     throw new ApiError(httpStatus.NOT_FOUND, 'User not found.');
     }
 
     if (!(await user.isPasswordMatch(oldPassword))) {
