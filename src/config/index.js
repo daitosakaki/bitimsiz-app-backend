@@ -2,7 +2,8 @@ const dotenv = require('dotenv');
 const path = require('path');
 const Joi = require('joi');
 
-
+console.log('************');
+console.log(process.env);
 // Sadece 'production' olmayan ortamlarda .env dosyasını yükle.
 if (process.env.NODE_ENV !== 'production') {
   console.log('.env dosyası YÜKLENİYOR...');
@@ -33,12 +34,10 @@ const envVarsSchema = Joi.object()
 const { value: envVars, error } = envVarsSchema.prefs({ errors: { label: 'key' } }).validate(process.env);
 
 if (error) {
-  // Hata öncesi durumu görmek için bir log daha ekleyelim
   console.error('Joi validation hatası oluştu!');
   throw new Error(`Config validation error: ${error.message}`);
 }
 
-// ... dosyanın geri kalanı aynı ...
 module.exports = {
   env: envVars.NODE_ENV,
   port: envVars.PORT,
