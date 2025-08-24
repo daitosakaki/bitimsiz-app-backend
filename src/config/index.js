@@ -1,21 +1,5 @@
-const dotenv = require('dotenv');
-const path = require('path');
 const Joi = require('joi');
 
-// --- HATA AYIKLAMA İÇİN LOG EKLIYORUZ ---
-console.log('--- CONFIG DOSYASI BAŞLADI ---');
-console.log(`Mevcut NODE_ENV değeri: "${process.env.NODE_ENV}"`);
-console.log(`Mevcut NODE_ENV tipi: ${typeof process.env.NODE_ENV}`);
-// --- HATA AYIKLAMA SONU ---
-
-
-// Sadece 'production' olmayan ortamlarda .env dosyasını yükle.
-if (process.env.NODE_ENV !== 'production') {
-  console.log('.env dosyası YÜKLENİYOR...');
-  dotenv.config({ path: path.join(__dirname, '../../.env') });
-} else {
-  console.log('.env dosyası ATLANDI (production ortamı).');
-}
 
 // Tüm ortam değişkenlerini Joi ile doğrulayarak bir şema oluşturalım.
 const envVarsSchema = Joi.object()
@@ -24,7 +8,6 @@ const envVarsSchema = Joi.object()
     PORT: Joi.number().default(8080),
     MONGODB_URI: Joi.string().required().description('Mongo DB url'),
     REDIS_URL: Joi.string().required().description('Redis url'),
-    // ... (diğer değişkenleriniz aynı kalacak)
     JWT_SECRET: Joi.string().required().description('JWT secret key'),
     JWT_EXPIRES_IN: Joi.string().default('15m').description('minutes for access token'),
     JWT_REFRESH_SECRET: Joi.string().required().description('JWT refresh secret key'),
