@@ -2,6 +2,7 @@ const dotenv = require('dotenv');
 const path = require('path');
 const Joi = require('joi');
 
+
 // Sadece 'production' olmayan ortamlarda .env dosyasını yükle.
 if (process.env.NODE_ENV !== 'production') {
   console.log('.env dosyası YÜKLENİYOR...');
@@ -13,7 +14,7 @@ if (process.env.NODE_ENV !== 'production') {
 // Tüm ortam değişkenlerini Joi ile doğrulayarak bir şema oluşturalım.
 const envVarsSchema = Joi.object()
   .keys({
-    NODE_ENV: Joi.string('production'),
+    NODE_ENV: Joi.string().valid('production', 'development', 'test').default('production'),
     PORT: Joi.number().default(8080),
     MONGODB_URI: Joi.string().required().description('Mongo DB url'),
     REDIS_URL: Joi.string().required().description('Redis url'),
