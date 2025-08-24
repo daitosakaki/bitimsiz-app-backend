@@ -9,9 +9,7 @@ const { morganMiddleware } = require('./config/logger');
 const v1Routes = require('./api/v1');
 const { errorConverter, errorHandler } = require('./middlewares/error.handler');
 const ApiError = require('./utils/ApiError');
-if (process.env.NODE_ENV !== 'production') {
-  require('dotenv').config();
-}
+
 const app = express();
 
 if (config.env !== 'test') {

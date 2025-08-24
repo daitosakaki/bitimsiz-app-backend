@@ -1,3 +1,12 @@
+// --- YENİ EKLENEN KISIM ---
+// Ortam değişkenlerini, diğer tüm kodlardan ÖNCE yükle.
+// Bu, uygulamanın herhangi bir yerinde config çağrılmadan önce
+// process.env'in hazır olmasını sağlar.
+if (process.env.NODE_ENV !== 'production') {
+  require('dotenv').config();
+}
+// --- DEĞİŞİKLİĞİN SONU ---
+
 const http = require('http');
 const mongoose = require('mongoose');
 const app = require('./app');
@@ -18,6 +27,7 @@ mongoose.connect(config.mongoose.url, config.mongoose.options).then(() => {
   });
 });
 
+// Geri kalan kod aynı...
 const exitHandler = () => {
   if (server) {
     server.close(() => {
