@@ -3,7 +3,7 @@ const path = require('path');
 const Joi = require('joi');
 
 console.log('************');
-console.log(process.env);
+console.log(process.env.CORS_ORIGIN);
 // Sadece 'production' olmayan ortamlarda .env dosyasını yükle.
 if (process.env.NODE_ENV !== 'production') {
   console.log('.env dosyası YÜKLENİYOR...');
