@@ -1,10 +1,12 @@
 steps:
+  # 1. ve 2. adımlar aynı kalıyor
   - name: 'gcr.io/cloud-builders/docker'
     args: ['build', '-t', 'europe-west1-docker.pkg.dev/virtual-sylph-105892-k2/bitimsiz-app-repo/bitimsiz-app-backend:$COMMIT_SHA', '.']
-  
+
   - name: 'gcr.io/cloud-builders/docker'
     args: ['push', 'europe-west1-docker.pkg.dev/virtual-sylph-105892-k2/bitimsiz-app-repo/bitimsiz-app-backend:$COMMIT_SHA']
     
+  # 3. Aşama: Cloud Run'a dağıtım yap (HATA AYIKLAMA MODU)
   - name: 'gcr.io/google.com/cloudsdktool/cloud-sdk'
     entrypoint: gcloud
     args:
@@ -21,6 +23,16 @@ steps:
       - 'bitimsiz-app-connector'
       - '--vpc-egress'
       - 'all-traffic'
-      - '--clear-env-vars'
+      
+      # --- YENİ EKLENEN HATA AYIKLAMA ADIMI ---
+      # Dockerfile'daki CMD'yi geçersiz kılarak önce ortam değişkenlerini yazdır, sonra uygulamayı başlat.
+      - '--command'
+      - 'sh'
+      - '-c'
+      - 'echo "--- ORTAM DEĞİŞKENLERİ ---" && printenv && echo "--- UYGULAMA BAŞLATILIYOR ---" && node src/server.js'
+
+      # Secret Manager'dan alınacak sırlar
       - '--update-secrets=MONGODB_URI=MONGODB_URI:latest,REDIS_URL=REDIS_URL:latest,JWT_SECRET=JWT_SECRET:latest,JWT_REFRESH_SECRET=JWT_REFRESH_SECRET:latest,FIREBASE_SERVICE_ACCOUNT_BASE64=FIREBASE_SERVICE_ACCOUNT_BASE64:latest,PHONE_ENCRYPTION_KEY=PHONE_ENCRYPTION_KEY:latest'
+      
+      # Doğrudan yazılacak ortam değişkenleri
       - '--set-env-vars=NODE_ENV=production,CORS_ORIGIN=https://app.bitimsiz.com,GCS_BUCKET_NAME=bitimsiz-uploads'
