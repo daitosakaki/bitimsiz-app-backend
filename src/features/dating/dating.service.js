@@ -3,6 +3,7 @@ const httpStatus = require('http-status');
 const { DatingProfile, Swipe, Match } = require('./dating.model');
 const Chat = require('../chats/chat.model'); // Eşleşme sonrası sohbet için
 const ApiError = require('../../utils/ApiError');
+const User = require('../users/user.model');
 
 /**
  * Kullanıcının flört profilini oluşturur veya günceller.
@@ -61,7 +62,22 @@ const swipe = async (swiperId, swipedUserId, action) => {
             match.chat = chat._id;
             await match.save();
 
-            // TODO: Kullanıcılara bildirim gönder (Socket.IO veya FCM ile)
+            const swiperUser = await User.findById(swiperId).select('displayName').lean();
+            const swipedUser = await User.findById(swipedUserId).select('displayName').lean();
+
+            // Karşı tarafa bildirim gönder
+            sendNotificationToUser(swipedUserId, {
+                title: 'Yeni bir eşleşmen var! 🎉',
+                body: `${swiperUser.displayName} ile eşleştin.`,
+                data: { type: 'new_match', matchId: match._id.toString() }
+            });
+
+            // Beğeniyi atana bildirim gönder
+            sendNotificationToUser(swiperId, {
+                title: 'Yeni bir eşleşmen var! 🎉',
+                body: `${swipedUser.displayName} ile eşleştin.`,
+                data: { type: 'new_match', matchId: match._id.toString() }
+            });
 
             return { matched: true, match };
         }

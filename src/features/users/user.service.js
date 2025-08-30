@@ -278,7 +278,20 @@ const deleteAddress = async (userId, addressId) => {
         throw new ApiError(httpStatus.NOT_FOUND, 'Address not found or permission denied.');
     };
 }
-
+/**
+ * Kullanıcının cihazına ait FCM token'ını veritabanına ekler.
+ * @param {string} userId - Kullanıcının ID'si
+ * @param {string} token - Firebase'den gelen FCM token
+ */
+const addFcmToken = async (userId, token) => {
+    const user = await User.findById(userId);
+    if (!user) {
+        throw new ApiError(httpStatus.NOT_FOUND, 'User not found');
+    }
+    // $addToSet operatörü, token zaten dizide varsa tekrar eklemez.
+    await User.updateOne({ _id: userId }, { $addToSet: { fcmTokens: token } });
+    logger.info('FCM token added for user', { userId, token });
+};
 module.exports = {
     getUserByUsername,
     updateUserById,
@@ -292,4 +305,5 @@ module.exports = {
     getOnlineStatus,
     updateAddress,
     deleteAddress,
+    addFcmToken,
 };

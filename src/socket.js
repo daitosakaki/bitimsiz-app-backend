@@ -7,6 +7,7 @@ const config = require('./config');
 const Message = require('./features/chats/message.model');
 const Chat = require('./features/chats/chat.model');
 const User = require('./features/users/user.model');
+const { sendNotificationToUser } = require('./features/notifications/notification.service');
 
 // Redis'te online kullanıcıları takip etmek için
 const redisClient = createClient({ url: config.redis.url });
@@ -84,6 +85,16 @@ function initializeSocket(httpServer) {
                 await Chat.findByIdAndUpdate(chatId, { lastMessage: message._id });
                 io.to(chatId).emit('newMessage', populatedMessage);
                 logger.info('New message sent', { senderId: socket.userId, chatId });
+                // --- BİLDİRİM GÖNDERME ---
+                const recipientMembers = chat.members.filter(memberId => memberId.toString() !== socket.userId);
+                recipientMembers.forEach(recipientId => {
+                    sendNotificationToUser(recipientId.toString(), {
+                        title: `Yeni Mesaj: ${populatedMessage.sender.displayName}`,
+                        body: populatedMessage.content,
+                        data: { type: 'new_message', chatId: chatId.toString() }
+                    });
+                });
+                // --- BİTTİ ---
             } catch (error) {
                 logger.error('Error sending message', { userId: socket.userId, error: error.message });
                 socket.emit('sendMessageError', { message: 'Could not send message.' });
@@ -92,7 +103,7 @@ function initializeSocket(httpServer) {
 
         socket.on('editMessage', async (data) => {
             const { messageId, chatId, newContent } = data;
-            
+
             // --- IYILESTIRME: Yetkilendirme Kontrolü ---
             const chat = await Chat.findOne({ _id: chatId, members: socket.userId });
             if (!chat) {
@@ -117,7 +128,7 @@ function initializeSocket(httpServer) {
 
                 // --- IYILESTIRME: Yetkilendirme Kontrolü ---
                 const chat = await Chat.findOne({ _id: chatId, members: socket.userId });
-                 if (!chat) {
+                if (!chat) {
                     logger.warn('Unauthorized attempt to delete message in a chat they are not part of', { userId: socket.userId, chatId });
                     return socket.emit('deleteMessageError', { message: 'Authorization failed.' });
                 }

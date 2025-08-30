@@ -33,4 +33,6 @@ router.route('/me/addresses/:addressId')
     .put(auth(), validate(addressValidation.addressSchema), userController.updateAddress)
     .delete(auth(), validate(addressValidation.addressIdSchema), userController.deleteAddress);
 
+router.post('/me/fcm-token', auth(), userController.addFcmToken);
+
 module.exports = router;

@@ -52,6 +52,11 @@ const deleteAddress = catchAsync(async (req, res) => {
     res.status(httpStatus.NO_CONTENT).send();
 });
 
+const addFcmToken = catchAsync(async (req, res) => {
+    const { token } = req.body;
+    await userService.addFcmToken(req.user.id, token);
+    res.status(httpStatus.OK).send({ message: 'Token registered successfully.' });
+});
 
 module.exports = {
     getMe,
@@ -63,4 +68,5 @@ module.exports = {
     addAddress,
     updateAddress,
     deleteAddress,
+    addFcmToken,
 };
