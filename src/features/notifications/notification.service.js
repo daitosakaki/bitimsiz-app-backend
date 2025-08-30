@@ -31,9 +31,27 @@ const sendNotificationToUser = async (userId, payload) => {
     try {
         const response = await admin.messaging().sendMulticast(message);
         logger.info('Successfully sent FCM message', { successCount: response.successCount, failureCount: response.failureCount, userId });
-        
-        // TODO: Başarısız olan ve "NotRegistered" hatası dönen token'ları veritabanından temizle.
-        // Bu, veritabanınızı temiz tutar ve gereksiz denemeleri önler.
+
+        if (response.failureCount > 0) {
+            const tokensToRemove = [];
+            response.responses.forEach((result, index) => {
+                const error = result.error;
+                // Eğer hata, token'ın artık kayıtlı olmamasından kaynaklanıyorsa
+                if (error && error.code === 'messaging/registration-token-not-registered') {
+                    // İlgili token'ı silinecekler listesine ekle
+                    tokensToRemove.push(user.fcmTokens[index]);
+                }
+            });
+
+            if (tokensToRemove.length > 0) {
+                logger.info(`Removing ${tokensToRemove.length} invalid FCM tokens for user`, { userId });
+                // Kullanıcının fcmTokens dizisinden geçersiz token'ları kaldır
+                await User.updateOne(
+                    { _id: userId },
+                    { $pullAll: { fcmTokens: tokensToRemove } }
+                );
+            }
+        }
 
     } catch (error) {
         logger.error('Error sending FCM message', { error: error.message, userId });

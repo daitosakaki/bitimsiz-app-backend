@@ -4,6 +4,7 @@ const { DatingProfile, Swipe, Match } = require('./dating.model');
 const Chat = require('../chats/chat.model'); // Eşleşme sonrası sohbet için
 const ApiError = require('../../utils/ApiError');
 const User = require('../users/user.model');
+const { sendNotificationToUser } = require('../notifications/notification.service');
 
 /**
  * Kullanıcının flört profilini oluşturur veya günceller.
