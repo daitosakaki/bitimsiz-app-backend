@@ -21,7 +21,7 @@ const getPotentialProfiles = catchAsync(async (req, res) => {
 
 const handleSwipe = catchAsync(async (req, res) => {
     const { swipedUserId, action } = req.body;
-    const result = await datingService.swipe(req.user.id, swipedUserId, action);
+    const result = await datingService.swipe(req.user, swipedUserId, action); // req.user'ın tamamını gönder
     res.status(httpStatus.CREATED).send(result);
 });
 
@@ -30,10 +30,15 @@ const getLikes = catchAsync(async (req, res) => {
     res.send(users);
 });
 
+const undoLastSwipe = catchAsync(async (req, res) => {
+    const result = await datingService.undoSwipe(req.user);
+    res.send(result);
+});
 module.exports = {
     updateDatingProfile,
     getDatingProfile,
     getPotentialProfiles,
     handleSwipe,
     getLikes,
+    undoLastSwipe,
 };

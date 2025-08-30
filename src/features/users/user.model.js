@@ -31,12 +31,21 @@ const userSchema = new mongoose.Schema({
     followerCount: { type: Number, default: 0 },
     followingCount: { type: Number, default: 0 },
     subscription: {
-        status: {
+        tier: {
             type: String,
-            enum: ['free', 'premium'],
+            enum: ['free', 'gold', 'platinum'],
             default: 'free',
         },
-        expiresAt: { type: Date },
+        // ... (platform, originalTransactionId, expiresAt)
+    },
+
+    // --- YENİ ALANLAR ---
+    usage: {
+        swipes: usageLimitSchema,
+        superLikes: usageLimitSchema,
+        undoSwipes: usageLimitSchema,
+        postShares: usageLimitSchema,
+        interactions: usageLimitSchema,
     },
     superLikes: {
         count: { type: Number, default: 1 }, // Ücretsiz kullanıcılar için günde 1

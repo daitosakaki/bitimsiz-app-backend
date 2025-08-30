@@ -5,6 +5,7 @@ const User = require('../users/user.model');
 const Follow = require('../users/follow.model');
 const ApiError = require('../../utils/ApiError');
 const { logger } = require('../../config/logger');
+const { checkAndDecrementUsage } = require('../users/usage.service');
 
 const storage = new Storage();
 const bucketName = process.env.GCS_BUCKET_NAME;
@@ -17,6 +18,12 @@ const generateUploadUrl = async (fileName) => {
 };
 
 const createPost = async (userId, postBody, reqMetadata) => {
+    const user = await User.findById(userId);
+    if (!user) throw new ApiError(httpStatus.NOT_FOUND, 'User not found');
+
+    // --- LİMİT KONTROLÜ ---
+    await checkAndDecrementUsage(user, 'postShare');
+    // --- BİTTİ ---
     const postData = {
         ...postBody,
         author: userId,

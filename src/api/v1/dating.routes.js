@@ -1,25 +1,24 @@
 // src/api/v1/dating.routes.js
+const hasPermission = require('../../middlewares/permission.middleware');
 const express = require('express');
 const auth = require('../../middlewares/auth.middleware');
 const { validate } = require('../../middlewares/validate.middleware');
 const datingController = require('../../features/dating/dating.controller');
 const { datingValidation } = require('../../features/dating/dating.validation');
-const premium = require('../../middlewares/premium.middleware');
+const premium = require('../../middlewares/permission.middleware');
 
 const router = express.Router();
 
-// Flört profili yönetimi
 router.route('/profile')
     .get(auth(), datingController.getDatingProfile)
     .put(auth(), validate(datingValidation.updateDatingProfileSchema), datingController.updateDatingProfile);
 
-// Potansiyel profilleri/eşleşmeleri getirme
 router.get('/profiles', auth(), datingController.getPotentialProfiles);
 
-// Seni beğenenleri görme (Sadece Premium)
-router.get('/likes-me', auth(), premium(), datingController.getLikes); // <-- YENİ
+router.get('/likes-me', auth(), hasPermission('SEE_WHO_LIKED_YOU'), datingController.getLikes);
 
-// Kaydırma (like/dislike/super_like)
 router.post('/swipe', auth(), validate(datingValidation.swipeSchema), datingController.handleSwipe);
+
+router.post('/undo-swipe', auth(), datingController.undoLastSwipe);
 
 module.exports = router;
