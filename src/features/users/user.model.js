@@ -4,7 +4,7 @@ const bcrypt = require('bcryptjs');
 const userSchema = new mongoose.Schema({
     firebaseUid: { type: String, required: true, unique: true, index: true },
     fcmTokens: [
-          { type: String }
+        { type: String }
     ],
     phoneNumber: { type: String, required: true, unique: true, index: true },
     username: { type: String, required: true, unique: true, index: true, trim: true },
@@ -30,7 +30,18 @@ const userSchema = new mongoose.Schema({
     // Sosyal Grafik (Denormalize Edilmiş Sayımlar)
     followerCount: { type: Number, default: 0 },
     followingCount: { type: Number, default: 0 },
-
+    subscription: {
+        status: {
+            type: String,
+            enum: ['free', 'premium'],
+            default: 'free',
+        },
+        expiresAt: { type: Date },
+    },
+    superLikes: {
+        count: { type: Number, default: 1 }, // Ücretsiz kullanıcılar için günde 1
+        lastRefreshed: { type: Date, default: () => new Date() },
+    },
     // E-Ticaret Bilgileri
     // Stripe, Iyzico gibi ödeme sağlayıcısındaki müşteri ID'sini burada saklarız.
     // ASLA kredi kartı bilgisi saklamayın!

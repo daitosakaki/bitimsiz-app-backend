@@ -13,9 +13,10 @@ const getDatingProfile = catchAsync(async (req, res) => {
     res.send(profile);
 });
 
-const getMatches = catchAsync(async (req, res) => {
-    const matches = await datingService.getPotentialMatches(req.user.id);
-    res.send(matches);
+// getMatches'ı getPotentialProfiles olarak adlandırıp filtreleri alacak şekilde güncelleyelim
+const getPotentialProfiles = catchAsync(async (req, res) => {
+    const profiles = await datingService.getPotentialMatches(req.user.id, req.query);
+    res.send(profiles);
 });
 
 const handleSwipe = catchAsync(async (req, res) => {
@@ -24,10 +25,15 @@ const handleSwipe = catchAsync(async (req, res) => {
     res.status(httpStatus.CREATED).send(result);
 });
 
+const getLikes = catchAsync(async (req, res) => {
+    const users = await datingService.getUsersWhoLikedMe(req.user.id);
+    res.send(users);
+});
 
 module.exports = {
     updateDatingProfile,
     getDatingProfile,
-    getMatches,
+    getPotentialProfiles,
     handleSwipe,
+    getLikes,
 };

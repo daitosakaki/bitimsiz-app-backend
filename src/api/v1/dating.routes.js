@@ -4,6 +4,7 @@ const auth = require('../../middlewares/auth.middleware');
 const { validate } = require('../../middlewares/validate.middleware');
 const datingController = require('../../features/dating/dating.controller');
 const { datingValidation } = require('../../features/dating/dating.validation');
+const premium = require('../../middlewares/premium.middleware');
 
 const router = express.Router();
 
@@ -12,10 +13,13 @@ router.route('/profile')
     .get(auth(), datingController.getDatingProfile)
     .put(auth(), validate(datingValidation.updateDatingProfileSchema), datingController.updateDatingProfile);
 
-// Potansiyel eşleşmeleri getirme
-router.get('/matches', auth(), datingController.getMatches);
+// Potansiyel profilleri/eşleşmeleri getirme
+router.get('/profiles', auth(), datingController.getPotentialProfiles);
 
-// Kaydırma (like/dislike)
+// Seni beğenenleri görme (Sadece Premium)
+router.get('/likes-me', auth(), premium(), datingController.getLikes); // <-- YENİ
+
+// Kaydırma (like/dislike/super_like)
 router.post('/swipe', auth(), validate(datingValidation.swipeSchema), datingController.handleSwipe);
 
 module.exports = router;
