@@ -43,7 +43,7 @@ const createPost = async (userId, postBody, reqMetadata) => {
 };
 
 const getFeedForUser = async (userId, paginationOptions) => {
-    const { limit = 10, page = 1 } = paginati1onOptions;
+    const { limit = 10, page = 1 } = paginationOptions;
     const skip = (page - 1) * limit;
     // Aggregation pipeline'ında ObjectId olarak karşılaştırma yapmak önemlidir.
     const currentUserId = new mongoose.Types.ObjectId(String(userId));
