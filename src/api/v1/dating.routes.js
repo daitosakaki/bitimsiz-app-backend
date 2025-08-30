@@ -1,11 +1,9 @@
-// src/api/v1/dating.routes.js
-const hasPermission = require('../../middlewares/permission.middleware');
 const express = require('express');
 const auth = require('../../middlewares/auth.middleware');
+const hasPermission = require('../../middlewares/permission.middleware'); // <-- Değişti
 const { validate } = require('../../middlewares/validate.middleware');
 const datingController = require('../../features/dating/dating.controller');
 const { datingValidation } = require('../../features/dating/dating.validation');
-const premium = require('../../middlewares/permission.middleware');
 
 const router = express.Router();
 

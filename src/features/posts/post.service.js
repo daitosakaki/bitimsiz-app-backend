@@ -21,9 +21,7 @@ const createPost = async (userId, postBody, reqMetadata) => {
     const user = await User.findById(userId);
     if (!user) throw new ApiError(httpStatus.NOT_FOUND, 'User not found');
 
-    // --- LİMİT KONTROLÜ ---
     await checkAndDecrementUsage(user, 'postShare');
-    // --- BİTTİ ---
     const postData = {
         ...postBody,
         author: userId,
