@@ -5,11 +5,13 @@ const postRoutes = require('./posts.routes');
 const chatRoutes = require('./chats.routes');
 const messageRoutes = require('./messages.routes');
 const followRoutes = require('./follow.routes');
+const datingRoutes = require('./dating.routes');
 
 const router = express.Router();
 
 const defaultRoutes = [
   { path: '/auth', route: authRoutes },
+  { path: '/dating', route: datingRoutes }, 
   { path: '/users', route: userRoutes },
   { path: '/posts', route: postRoutes },
   { path: '/chats', route: chatRoutes },

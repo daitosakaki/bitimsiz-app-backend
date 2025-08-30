@@ -35,7 +35,10 @@ const userSchema = new mongoose.Schema({
     // Stripe, Iyzico gibi ödeme sağlayıcısındaki müşteri ID'sini burada saklarız.
     // ASLA kredi kartı bilgisi saklamayın!
     paymentProviderCustomerId: { type: String, private: true },
-
+    datingProfile: {
+        type: mongoose.Schema.Types.ObjectId,
+        ref: 'DatingProfile'
+    },
     // Satıcıya Özel Bilgiler (Sadece rol 'seller' ise doldurulur)
     sellerProfile: {
         shopName: { type: String, trim: true },
