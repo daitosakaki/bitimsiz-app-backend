@@ -20,18 +20,22 @@ const generateToken = (payload, secret, expiresIn) => {
 /**
  * Telefon numarasını doğrulamak ve kayıt için geçici bir token almak üzere Firebase idToken'ını kullanır.
  * @param {string} idToken - Firebase Client SDK'sından gelen idToken.
+ * @param {string} ip - İsteği yapan kullanıcının IP adresi (loglama için).
  * @returns {Promise<{registrationToken: string}>}
  */
-const verifyPhoneAndGetRegToken = async (idToken) => {
+const verifyPhoneAndGetRegToken = async (idToken, ip) => {
     const decodedToken = await admin.auth().verifyIdToken(idToken);
     const { phone_number, uid } = decodedToken;
+
+    // --- EKLENDİ ---
+    // Loglama işlemi, telefon numarası bilgisine sahip olduğumuz bu katmana taşındı.
+    logger.info(`Phone verification successful, registration token issued for phone ...${phone_number.slice(-4)}`, { firebaseUid: uid, ip });
 
     const userExists = await User.findOne({ phoneNumber: phone_number });
     if (userExists) {
         throw new ApiError(httpStatus.CONFLICT, 'This phone number is already registered.');
     }
 
-    // Sadece bu amaç için kullanılacak 10 dakikalık geçici bir token oluştur
     const registrationToken = generateToken(
         { phoneNumber: phone_number, firebaseUid: uid, purpose: 'registration' },
         config.jwt.secret,
