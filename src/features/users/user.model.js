@@ -1,6 +1,11 @@
 const mongoose = require('mongoose');
 const bcrypt = require('bcryptjs');
 
+const usageLimitSchema = new mongoose.Schema({
+    count: { type: Number, default: 0 },
+    lastReset: { type: Date, default: () => new Date() },
+}, { _id: false });
+
 const userSchema = new mongoose.Schema({
     firebaseUid: { type: String, required: true, unique: true, index: true },
     fcmTokens: [
@@ -39,13 +44,12 @@ const userSchema = new mongoose.Schema({
         // ... (platform, originalTransactionId, expiresAt)
     },
 
-    // --- YENİ ALANLAR ---
     usage: {
-        swipes: usageLimitSchema,
-        superLikes: usageLimitSchema,
-        undoSwipes: usageLimitSchema,
-        postShares: usageLimitSchema,
-        interactions: usageLimitSchema,
+        swipe: usageLimitSchema,
+        superLike: usageLimitSchema,
+        undoSwipe: usageLimitSchema,
+        postShare: usageLimitSchema,
+        interaction: usageLimitSchema,
     },
     superLikes: {
         count: { type: Number, default: 1 }, // Ücretsiz kullanıcılar için günde 1

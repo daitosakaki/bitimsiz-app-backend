@@ -12,7 +12,7 @@ const { logger } = require('../../config/logger');
  * @param {object} [payload.data] - Bildirimle birlikte gönderilecek ek veri (örn: { chatId: '123' })
  */
 const sendNotificationToUser = async (userId, payload) => {
-    const user = await User.findById(userId).select('fcmTokens').lean();
+    const user = await User.findById(userId).select('fcmTokens').lean(); 
 
     if (!user || !user.fcmTokens || user.fcmTokens.length === 0) {
         logger.warn('No FCM tokens found for user to send notification', { userId });

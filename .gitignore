@@ -1,6 +1,5 @@
 node_modules
-<<<<<<< HEAD
+.git
 .env
-=======
-.env
->>>>>>> b2edc8f6d28c9a955a7360fce7373f5aafccb2e4
+Dockerfile
+README.md

@@ -1,6 +1,7 @@
 const httpStatus = require('http-status');
 const userService = require('./user.service');
 const catchAsync = require('../../utils/catchAsync');
+const { logger } = require('../../config/logger');
 
 // getMe, updateMe, getUserByUsername, follow, unfollow aynı kalır...
 const getMe = catchAsync(async (req, res) => {

@@ -69,7 +69,7 @@ const registerUser = async (registrationToken, userData) => {
     });
 
     const accessToken = generateToken({ sub: user.id }, config.jwt.secret, config.jwt.expiresIn);
-    const refreshToken = generateToken({ sub: user.id }, config.jwt.refreshSecret,config.jwt.refreshExpiresIn);
+    const refreshToken = generateToken({ sub: user.id }, config.jwt.refreshSecret, config.jwt.refreshExpiresIn);
 
     return { user, tokens: { accessToken, refreshToken } };
 };
@@ -87,7 +87,7 @@ const loginWithPhoneAndPassword = async (phoneNumber, password) => {
     }
 
     const accessToken = generateToken({ sub: user.id }, config.jwt.secret, config.jwt.expiresIn);
-    const refreshToken = generateToken({ sub: user.id }, config.jwt.refreshSecret,config.jwt.refreshExpiresIn);
+    const refreshToken = generateToken({ sub: user.id }, config.jwt.refreshSecret, config.jwt.refreshExpiresIn);
 
     return { user, tokens: { accessToken, refreshToken } };
 };
@@ -135,8 +135,8 @@ const resetPasswordWithFirebase = async (idToken, newPassword) => {
 const changePassword = async (userId, oldPassword, newPassword) => {
     const user = await User.findById(userId).select('+password');
     if (!user) {
-       logger.warn(`User not found.`);
-     throw new ApiError(httpStatus.NOT_FOUND, 'User not found.');
+        logger.warn(`User not found for password change attempt.`, { userId, ip: req.ip }); 
+        throw new ApiError(httpStatus.NOT_FOUND, 'User not found.');
     }
 
     if (!(await user.isPasswordMatch(oldPassword))) {
