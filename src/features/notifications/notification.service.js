@@ -12,7 +12,7 @@ const { logger } = require('../../config/logger');
  * @param {object} [payload.data] - Bildirimle birlikte gönderilecek ek veri (örn: { chatId: '123' })
  */
 const sendNotificationToUser = async (userId, payload) => {
-    const user = await User.findById(userId).select('fcmTokens').lean(); 
+    const user = await User.findById(userId).select('fcmTokens'); 
 
     if (!user || !user.fcmTokens || user.fcmTokens.length === 0) {
         logger.warn('No FCM tokens found for user to send notification', { userId });
@@ -45,7 +45,6 @@ const sendNotificationToUser = async (userId, payload) => {
 
             if (tokensToRemove.length > 0) {
                 logger.info(`Removing ${tokensToRemove.length} invalid FCM tokens for user`, { userId });
-                // Kullanıcının fcmTokens dizisinden geçersiz token'ları kaldır
                 await User.updateOne(
                     { _id: userId },
                     { $pullAll: { fcmTokens: tokensToRemove } }

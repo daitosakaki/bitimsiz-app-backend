@@ -37,6 +37,7 @@ const messageSchema = new mongoose.Schema({
     expireAt: { type: Date, index: { expires: '1s' } },
 
 }, { timestamps: true });
+messageSchema.index({ chat: 1, createdAt: -1 });
 
 const Message = mongoose.model('Message', messageSchema);
 module.exports = Message;

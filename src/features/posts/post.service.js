@@ -6,13 +6,14 @@ const Follow = require('../users/follow.model');
 const ApiError = require('../../utils/ApiError');
 const { logger } = require('../../config/logger');
 const { checkAndDecrementUsage } = require('../users/usage.service');
+const mongoose = require('mongoose');
 
 const storage = new Storage();
 const bucketName = process.env.GCS_BUCKET_NAME;
 
 const generateUploadUrl = async (fileName) => {
     const options = { version: 'v4', action: 'write', expires: Date.now() + 15 * 60 * 1000, };
-    const [url] = await storage.bucket(bucketName).file(fileName).getSignedUrl(options);
+    const [url] = storage.bucket(bucketName).file(fileName).getSignedUrl(options);
     logger.info('Generated GCS signed URL', { fileName });
     return url;
 };
@@ -42,18 +43,73 @@ const createPost = async (userId, postBody, reqMetadata) => {
 };
 
 const getFeedForUser = async (userId, paginationOptions) => {
-    const { limit = 10, page = 1 } = paginationOptions;
+    const { limit = 10, page = 1 } = paginati1onOptions;
     const skip = (page - 1) * limit;
+    // Aggregation pipeline'ında ObjectId olarak karşılaştırma yapmak önemlidir.
+    const currentUserId = new mongoose.Types.ObjectId(String(userId));
+    const posts = await Follow.aggregate([
+        // 1. Adım: Mevcut kullanıcının onaylanmış ('approved') takiplerini bul.
+        { $match: { follower: currentUserId, status: 'approved' } },
 
-    const followingRelations = await Follow.find({ follower: userId, status: 'approved' }).select('following');
-    const followingIds = followingRelations.map(rel => rel.following);
-    followingIds.push(userId); // Kullanıcının kendi postlarını da feed'de göster
+        // 2. Adım: Tüm takip edilen ID'lerini bir diziye topla ve kullanıcının kendi ID'sini de ekle.
+        // Bu, tek bir "authorIds" dizisi oluşturur.
+        { $group: { _id: null, followingIds: { $push: '$following' } } },
+        { $project: { authorIds: { $setUnion: ['$followingIds', [currentUserId]] } } },
 
-    const posts = await Post.find({ author: { $in: followingIds } })
-        .populate('author', 'username displayName profileImageUrl')
-        .sort({ createdAt: -1 })
-        .skip(skip)
-        .limit(limit);
+        // 3. Adım: 'posts' koleksiyonu ile birleştirme ($lookup).
+        // Bu, SQL'deki LEFT JOIN'e benzer ve en kritik performans adımıdır.
+        {
+            $lookup: {
+                from: 'posts', // Post'ların bulunduğu koleksiyonun adı
+                let: { authorIds: '$authorIds' },
+                pipeline: [
+                    // Postları, oluşturduğumuz yazar ID'leri listesine göre filtrele
+                    { $match: { $expr: { $in: ['$author', '$$authorIds'] } } },
+                    // En yeniden eskiye doğru sırala
+                    { $sort: { createdAt: -1 } },
+                    // Sayfalama uygula
+                    { $skip: skip },
+                    { $limit: parseInt(limit, 10) },
+                    // Her posta yazarının detay bilgisini ekle
+                    {
+                        $lookup: {
+                            from: 'users',
+                            localField: 'author',
+                            foreignField: '_id',
+                            as: 'authorInfo', // 'author' alanı zaten var, çakışmasın diye 'authorInfo' yapıyoruz
+                        },
+                    },
+                    // Yazar bilgisini bir dizi yerine obje yap ve sadece gerekli alanları seç
+                    {
+                        $addFields: {
+                            author: {
+                                $arrayElemAt: [
+                                    {
+                                        $map: {
+                                            input: "$authorInfo",
+                                            as: "user",
+                                            in: {
+                                                _id: "$$user._id",
+                                                username: "$$user.username",
+                                                displayName: "$$user.displayName",
+                                                profileImageUrl: "$$user.profileImageUrl",
+                                            }
+                                        }
+                                    }, 0
+                                ]
+                            }
+                        }
+                    },
+                    { $project: { authorInfo: 0 } } // Geçici 'authorInfo' alanını kaldır
+                ],
+                as: 'posts', // Birleştirme sonucunda oluşan post dizisi
+            },
+        },
+
+        // 4. Adım: Sonucu temizle, sadece post listesini döndür.
+        { $unwind: '$posts' },
+        { $replaceRoot: { newRoot: '$posts' } },
+    ]);
 
     return posts;
 };
